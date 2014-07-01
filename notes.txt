@@ -1,0 +1,3 @@
+sudo service mongodb stop
+
+mongod --config /home/hun/thesis-python/mongodb.conf

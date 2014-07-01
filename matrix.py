@@ -31,7 +31,6 @@ corpus = [dictionary.doc2bow(text) for text in texts]
 
 corpora.MmCorpus.serialize('/tmp/ngs.mm', corpus)
 
-
 # transformation between word-document co-occurrence matrix (integers) into a locally/globally weighted TF_IDF matrix
 # http://radimrehurek.com/gensim/tutorial.html#first-example
 tfidf = models.TfidfModel(corpus) # initialize (train) the transformation model
