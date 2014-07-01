@@ -32,7 +32,7 @@ text = re.sub('[.,\/#!$%^&*;:{}=+_`~()«»—…–0-9]', ' ', text)  # заме
 
 text = text.replace('\\u2026'.decode('unicode-escape'), " ")
 text = text.replace('\\u2014'.decode('unicode-escape'), " ")
-text = text.replace('\\u2013'.decode('unicode-escape'), " ")
+# text = text.replace('\\u2013'.decode('unicode-escape'), " ")
 #repr()
 
 text = " ".join(text.split())  # удаляем лишние проблеы
