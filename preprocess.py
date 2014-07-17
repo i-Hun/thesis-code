@@ -15,7 +15,7 @@ import re
 # импортируем стоп-слова и конвертируем их в utf-8
 from nltk.corpus import stopwords
 stopwords_ru = [unicode(stopword, 'utf-8') for stopword in stopwords.words('russian')]
-additional_stopwords = ["омск", "омске", "омский", "омская", "омское", "омские", "омских", "омска", "м", "мм", "нгс"]
+additional_stopwords = ["омск", "омске", "омский", "омская", "омское", "омские", "омских", "омска", "м", "мм", "нгс", "ул"]
 additional_stopwords = [unicode(stopword, 'utf-8') for stopword in additional_stopwords]
 stopwords_ru.extend(additional_stopwords)
 
@@ -28,7 +28,9 @@ doc = ngs.find_one({"url": "http://ngs55.ru/news/1378625/view/"})
 
 text = doc["content"]
 
-text = re.sub('[.,\/#!$%^&*;:{}=+_`~()«»—…–0-9]', ' ', text)  # заменяем знаки препинания на пробелы u'.,\\/#!$%^&*;:{}=+_`~()\xab\xbb\u2014\u2026\u2013'
+# заменяем знаки препинания на пробелы u'.,\\/#!$%^&*;:{}=+_`~()\xab\xbb\u2014\u2026\u2013'
+# TODO: удалить №
+text = re.sub('[.,\/#!$%^&*;:{}=+_`~()«»—…–0-9]', ' ', text)
 
 text = text.replace('\\u2026'.decode('unicode-escape'), " ")
 text = text.replace('\\u2014'.decode('unicode-escape'), " ")

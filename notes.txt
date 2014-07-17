@@ -1,3 +1,6 @@
 sudo service mongodb stop
 
 mongod --config /home/hun/thesis-python/mongodb.conf
+
+git add -u --- добавить уже существующие изменённые файлы
+git rm -r --cached .idea --- прекратить отслеживать изменения в директории .idea
