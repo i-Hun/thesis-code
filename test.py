@@ -1,33 +1,53 @@
 # -*- coding: utf-8 -*-
+import moment
+from datetime import datetime
 
-import logging
-logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
+from preprocess import preprocess
+from analysis import most_common
 
-from collections import Counter
+from pymongo import MongoClient
 
-documents = ["Human machine interface for lab abc computer applications",
-             "A survey of user opinion of computer system response time",
-             "The EPS user interface management system",
-             "System and human system engineering testing of EPS",
-             "Relation of user perceived response time to error measurement",
-             "The generation of random binary unordered trees",
-             "The intersection graph of paths in trees",
-             "Graph minors IV Widths of trees and well quasi ordering",
-             "Graph minors A survey"]
+client = MongoClient('localhost', 3001)
 
-stoplist = set('for a of the and to in'.split())
+ngs = client.meteor.ngs
 
-texts = [[word for word in document.lower().split() if word not in stoplist] for document in documents]
 
-# remove words that appear only once
-all_tokens = sum(texts, [])
-tokens_once = set(word for word in set(all_tokens) if all_tokens.count(word) == 1)
-texts6 = [[word for word in text if word not in tokens_once]
-         for text in texts]
-c = Counter(word for x in documents for word in x.split())
+def find_min_date(collection_name):
+    docs = collection_name.find().sort("date", 1)
+    for doc in docs:
+        if "date" in doc.keys():
+            min_date = doc["date"]
+            return min_date
+        else:
+            print "Нет даты"
 
-cc = [' '.join(y for y in x.split() if c[y] > 1) for x in documents]
+def find_max_date(collection_name):
+    docs = collection_name.find().sort("date", -1)
+    for doc in docs:
+        if "date" in doc.keys():
+            max_date = doc["date"]
+            return max_date
+        else:
+            print "Нет даты"
 
-print(texts)
+def split_by_month(collection_name):
+    """
+    Принимает на входе данные, возвращает массив этих данных, разбитых по месяцам
+    """
+    min_date = find_min_date(collection_name)
+    max_date = find_max_date(collection_name)
+    output = []
 
-print(cc)
+    while (moment.date(min_date).add(months=1).date < max_date):
+        chunk = list(ngs.find({"$and": [{"date": {"$lt": moment.date(min_date).add(months=1).date}}, {"date": {"$gte": min_date}}]}).sort("date", 1))
+        output.append(chunk)
+        min_date = moment.date(min_date).add(months=1).date
+    # TODO: возвращать не просто массив, а объект, где помимо данных будет их привязка к месяцу
+    return output
+
+for month in split_by_month(ngs):
+    arr =[]
+    for doc in month:
+        arr.append(preprocess(doc["content"]))
+    print most_common(arr)
+    print "Конец месяца"
