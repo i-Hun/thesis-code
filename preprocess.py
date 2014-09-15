@@ -2,15 +2,14 @@
 
 from __future__ import division
 
-from pymongo import MongoClient
-
 from nltk.stem.snowball import SnowballStemmer
-
 from nltk.tokenize import word_tokenize, sent_tokenize, RegexpTokenizer
 
 import pymorphy2
 
 import re
+
+from bs4 import BeautifulSoup
 
 # импортируем стоп-слова и конвертируем их в utf-8
 from nltk.corpus import stopwords
@@ -49,3 +48,12 @@ def stem(tokens):
 
 def preprocess(text):
     return remove_stopwords(stem(tokenize(text)))
+
+def remove_urls(text):
+    return re.sub(r'(?i)\b((?:https?://|www\d{0,3}[.]|[a-z0-9.\-]+[.][a-z]{2,4}/)(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s()<>]+\)))*\))+(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)|[^\s`!()\[\]{};:\'".,<>?«»“”‘’]))', '', text)
+
+def get_text(html):
+    soup = BeautifulSoup(html)
+    return soup.get_text(" ", strip=True)
+def clear_text(text):
+    return " ".join(text.replace("\n", " ").replace("\r", " ").replace("\t", " ").split())

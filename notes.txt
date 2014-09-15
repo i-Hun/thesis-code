@@ -3,4 +3,39 @@ sudo service mongodb stop
 mongod --config /home/hun/thesis-python/mongodb.conf
 
 git add -u --- добавить уже существующие изменённые файлы
-git rm -r --cached .idea --- прекратить отслеживать изменения в директории .idea
+git rm -r --cached .idea --- (TODO сюда же output) прекратить отслеживать изменения в директории .idea
+
+// Запуск сервера MongoDB, с указанием директории сохранения данных
+sudo mongod --dbpath ~/Thesis/db/
+
+// Остановка процессов MongoDB
+sudo service mongodb stop
+
+// Подключение к созданному серверу и открытие консоли
+mongo
+
+//+++++++++++ Команды в консоли MongoDB +++++++++++++++++++++++
+
+// Имя текущей БД
+db
+
+// Создание и использования БД
+use <имя ДБ>
+
+// Список баз данных на сервере
+show dbs
+
+// Список коллекций в БД
+show collections
+
+// drop command removes an entire collection from a database. This command also removes any indexes associated with the dropped collection.
+db.<имя коллекции>.drop()
+
+// The following example removes all documents from the inventory collection. http://docs.mongodb.org/manual/tutorial/remove-documents/
+db.inventory.remove({})
+
+// Поиск записей в базе
+db.users.find({'name': {'$regex': 'sometext'}})
+
+db.users.find({name: /^pa/}) //like 'm%' 
+out: paulo, patric
