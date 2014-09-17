@@ -39,3 +39,12 @@ db.users.find({'name': {'$regex': 'sometext'}})
 
 db.users.find({name: /^pa/}) //like 'm%' 
 out: paulo, patric
+
+// Удаление дублей
+db.bk55.ensureIndex({'url' : 1}, {unique : true, dropDups : true})
+
+// Имена коллекций
+show collections
+
+// Имена коллекций в виде массива
+db.getCollectionNames()
