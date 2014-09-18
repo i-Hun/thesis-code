@@ -92,9 +92,7 @@ def parse_articles():
 
         date = datetime.datetime(int(row_date.split()[2]), month_by_name(row_date), int(row_date.split()[0]))
 
-
         title = d("#main h1").text()
-
 
         # Удаляем подписи к изображениям. Чаще всего этой копирайт: автор или сайт, с которого взято фото
         if d("#divcontnews table img"):
@@ -102,7 +100,6 @@ def parse_articles():
             content = content.remove("table").text()
         else:
             content = d("#divcontnews").text()
-
 
         if d("#main>#commcount") or d("#main>div>.comment"):
             if link[0:22] == "http://www.bk55.ru/mc2":

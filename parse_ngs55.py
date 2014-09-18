@@ -39,9 +39,9 @@ def parse_articles():
         response = requests.get(link)
         d = pq(response.text)
 
-        content = d(".nn-article-text").text()
-
         title = d(".nn-article-header").text()
+
+        content = d(".nn-article-text").text()
 
         row_date = d(".nn-article-date").text()
         date = datetime.datetime(int(row_date.split(".")[2]), int(row_date.split(".")[1]), int(row_date.split(".")[0]))
