@@ -9,9 +9,9 @@ from nltk.probability import FreqDist
 
 from pymongo import MongoClient
 
-client = MongoClient('localhost', 3001)
-
-ngs = client.meteor.ngs
+client = MongoClient()
+db = client.thesis
+gorod55 = db.gorod55
 
 def remove_without_date(collection_name):
     print "Удалено документов без даты: \n" + str(collection_name.remove({"date": None})["n"]) + "\n--------------------------------------"

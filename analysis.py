@@ -13,7 +13,7 @@ def remove_alone(documents):
 
     from collections import Counter
     c = Counter(token for document in documents for token in document)
-
+    alone = [token for token in document if c[token] > 1]
     return [[token for token in document if c[token] > 1] for document in documents]
 
 

@@ -7,18 +7,20 @@ from nltk.tokenize import word_tokenize, sent_tokenize, RegexpTokenizer
 
 import pymorphy2
 
+from pattern.en import tokenize
+
 import re
 
 from bs4 import BeautifulSoup
 
 # импортируем стоп-слова и конвертируем их в utf-8
 from nltk.corpus import stopwords
-stopwords_ru = [unicode(stopword, 'utf-8') for stopword in stopwords.words('russian')]
+stopwords_ru = stopwords.words('russian')
 additional_stopwords = ["омск", "омске", "омский", "омская", "омское", "омские", "омских", "омска", "м", "мм", "нгс", "ул", "тыс", "который", "это"]
 additional_stopwords = [unicode(stopword, 'utf-8') for stopword in additional_stopwords]
 stopwords_ru.extend(additional_stopwords)
 
-def tokenize(text):
+def tokenize_regexp(text):
     # заменяем знаки препинания на пробелы u'.,\\/#!$%^&*;:{}=+_`~()\xab\xbb\u2014\u2026\u2013'
     # TODO: удалить №
     text = re.sub('[.,\/#!$%^&*;:{}=+_`~()«»0-9№]', ' ', text)
@@ -28,32 +30,54 @@ def tokenize(text):
     text = text.replace('\\u2013'.decode('unicode-escape'), " ")  # en dash
     # дефис оставляю
     #repr()
-
     text = " ".join(text.split())  # удаляем лишние проблеы
-
     tokens = [token.lower() for token in text.split()]
+    print "Tokenize with regexp"
     return tokens
+
+def tokenize_pattern(text):
+    sents = tokenize(text, punctuation=".,;:!?()[]{}`''\"@#$^&*+-|=~_", replace={})
+    tokens = [token for sent in sents for token in sent.split()]
+    print "Tokenize with Pattern"
+    return tokens
+
+def remove_urls(text):
+    without_urls =  re.sub(r'(?i)\b((?:https?://|www\d{0,3}[.]|[a-z0-9.\-]+[.][a-z]{2,4}/)(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s()<>]+\)))*\))+(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)|[^\s`!()\[\]{};:\'".,<>?«»“”‘’]))', '', text)
+    print "URLs removed"
+    return without_urls
 
 def remove_stopwords(tokens):
     filtered_tokens = [w for w in tokens if not w in stopwords_ru]
+    print "Stopwords removed"
     return filtered_tokens
 
-def stem(tokens):
+def remove_punct(tokens):
+    punct = [i for i in ".,;:!?()[]{}`''\"@#$^&*+-|=~_"] + [u'\u2026'] + [u'\u2014'] + [u'\u2013']
+    without_punct = [w for w in tokens if not w in punct]
+    print "Punctuation removed"
+    return without_punct
 
-    # stemmer = SnowballStemmer("russian")
-    # stemmed_tokens = [stemmer.stem(token) for token in tokens]
 
+def stem_pymorphy(tokens):
     morph = pymorphy2.MorphAnalyzer()
-    return [morph.parse(token)[0].normal_form for token in tokens]
+    stemmed = [morph.parse(token)[0].normal_form for token in tokens]
+    print "Stemmed with Pymorphy"
+    return stemmed
+
+def stem_snowball(tokens):
+    stemmer = SnowballStemmer("russian")
+    stemmed = [stemmer.stem(token) for token in tokens]
+    print "Stemmed with Snowball"
+    return stemmed
+
 
 def preprocess(text):
-    return remove_stopwords(stem(tokenize(text)))
+    return stem_pymorphy(remove_stopwords(remove_punct(tokenize_pattern(text))))
 
-def remove_urls(text):
-    return re.sub(r'(?i)\b((?:https?://|www\d{0,3}[.]|[a-z0-9.\-]+[.][a-z]{2,4}/)(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s()<>]+\)))*\))+(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)|[^\s`!()\[\]{};:\'".,<>?«»“”‘’]))', '', text)
 
 def get_text(html):
     soup = BeautifulSoup(html)
     return soup.get_text(" ", strip=True)
+
 def clear_text(text):
     return " ".join(text.replace("\n", " ").replace("\r", " ").replace("\t", " ").split())
