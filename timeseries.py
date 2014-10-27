@@ -103,9 +103,3 @@ def count_by_day_graph(collection_name):
     grid().grid_line_alpha=0.3
 
     show()
-
-count_by_day_graph(ngs)
-
-
-
-print averange_count(ngs)

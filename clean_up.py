@@ -4,6 +4,7 @@ from pymongo import MongoClient
 from preprocess import tokenize_pattern, remove_punct, stem_pymorphy, remove_stopwords
 from analysis import most_common
 
+
 client = MongoClient()
 db = client.thesis
 gorod55 = db.gorod55
