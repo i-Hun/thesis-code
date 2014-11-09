@@ -2,6 +2,7 @@
 
 import datetime
 import requests
+import re
 from pymongo import MongoClient
 from pyquery import PyQuery as pq
 

@@ -11,12 +11,10 @@ from pattern.en import tokenize
 
 import re
 
-from bs4 import BeautifulSoup
-
 # импортируем стоп-слова и конвертируем их в utf-8
 from nltk.corpus import stopwords
 stopwords_ru = stopwords.words('russian')
-additional_stopwords = ["омск", "омске", "омский", "омская", "омское", "омские", "омских", "омска", "м", "мм", "нгс", "ул", "тыс", "который", "это"]
+additional_stopwords = []
 additional_stopwords = [unicode(stopword, 'utf-8') for stopword in additional_stopwords]
 stopwords_ru.extend(additional_stopwords)
 
@@ -36,8 +34,15 @@ def tokenize_regexp(text):
     return tokens
 
 def tokenize_pattern(text):
-    sents = tokenize(text, punctuation=".,;:!?()[]{}`''\"@#$^&*+-|=~_", replace={})
-    tokens = [token for sent in sents for token in sent.split()]
+    """
+    The tokenize() function returns a list of sentences, with punctuation marks split from words.
+    """
+    sents = tokenize(text, punctuation=".,;:!?()[]{}`''\"@#$^&*+-|=~_«»…".decode("utf8"), replace={})
+    """
+    Возвращает список предложений вида
+    Теперь , в 2014 году , голая Дженнифер Лоуренс появилась в Интернете за полтора месяца до всемирной премьеры первой части последней серии трилогии « Голодные игры : Сойка-пересмешница » ( The Hunger Games : Mockingjay – Part 1 ) .
+    """
+    tokens = [token.lower() for sent in sents for token in sent.split()]
     print "Tokenize with Pattern"
     return tokens
 
@@ -52,11 +57,16 @@ def remove_stopwords(tokens):
     return filtered_tokens
 
 def remove_punct(tokens):
-    punct = [i for i in ".,;:!?()[]{}`''\"@#$^&*+-|=~_"] + [u'\u2026'] + [u'\u2014'] + [u'\u2013']
+    """
+    Если убрать .decode("utf8")] (перегодировку из utf, которая является кодировкой, на котором написана программа, в unicode),
+    то пришлось бы дописывать символы в коде юникода:
+    [] + [u'\u2026'] + [u'\u2014'] + [u'\u2013']
+    Можно не писать .decode("utf8"), а просто поставить u"текст"
+    """
+    punct = [i for i in ".,;:!?()[]{}`''\"@#$^&*+-|=~_∙«»…—–".decode("utf8")]
     without_punct = [w for w in tokens if not w in punct]
     print "Punctuation removed"
     return without_punct
-
 
 def stem_pymorphy(tokens):
     morph = pymorphy2.MorphAnalyzer()
@@ -74,10 +84,6 @@ def stem_snowball(tokens):
 def preprocess(text):
     return stem_pymorphy(remove_stopwords(remove_punct(tokenize_pattern(text))))
 
-
-def get_text(html):
-    soup = BeautifulSoup(html)
-    return soup.get_text(" ", strip=True)
 
 def clear_text(text):
     return " ".join(text.replace("\n", " ").replace("\r", " ").replace("\t", " ").split())

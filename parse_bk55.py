@@ -3,10 +3,13 @@
 import datetime
 import requests
 from pymongo import MongoClient
-from preprocess import remove_urls, get_text, clear_text
+from preprocess import clear_text
 from bs4 import BeautifulSoup
 from pyquery import PyQuery as pq
 
+import gevent
+from gevent import monkey, pool
+monkey.patch_all()
 
 client = MongoClient()
 db = client.thesis
@@ -70,11 +73,13 @@ def parse_links():
     print len(links)
     bk55_links.insert({"links": links})
 
-def parse_articles():
-    count = 1
-    for link in bk55_links.find_one()['links'][2727:]:
-        print link
-        response = requests.get(link)
+jobs = []
+p = pool.Pool(10)
+
+def parse_article(url):
+    print url
+    response = requests.get(url)
+    if response.status_code == 200:
 
         d = pq(response.text)
 
@@ -89,21 +94,28 @@ def parse_articles():
             row_date = d("#main>div:first-child>div:nth-child(3)").text()  # 02 сентября 2013 — 09:41
         elif len(d("div#main")) == 2:  # http://www.bk55.ru/kolumnistika/article/37410/
             row_date = d("#main #main>div:first-child>div:nth-child(2)>div>div").text()
+        else:  #http://www.bk55.ru/news/article/21792/
+            row_date = d("#main>div:first-child>div:nth-child(4)").text()
 
         date = datetime.datetime(int(row_date.split()[2]), month_by_name(row_date), int(row_date.split()[0]))
 
         title = d("#main h1").text()
 
         # Удаляем подписи к изображениям. Чаще всего этой копирайт: автор или сайт, с которого взято фото
-        if d("#divcontnews table img"):
+        if d("#divcontnews table img") and (d("#divcontnews table").attr("bgcolor") == "#e7e7e7"):
             content = d("#divcontnews")
-            content = content.remove("table").text()
+            content = content.remove("table[bgcolor='#e7e7e7']").text()
+            print "Удаляем подписи к изображениям"
         else:
             content = d("#divcontnews").text()
+            print "Нет подписей к изображениям"
 
         if d("#main>#commcount") or d("#main>div>.comment"):
-            if link[0:22] == "http://www.bk55.ru/mc2":
-                comments_count = int(d("#main>#commcount").text().replace(u"Комментариев:", ""))
+            if url[0:22] == "http://www.bk55.ru/mc2":
+                if d("#main>#commcount"):
+                    comments_count = int(d("#main>#commcount").text().replace(u"Комментариев:", ""))
+                else:  #http://www.bk55.ru/mc2/news/article/3720
+                    comments_count = int(d("#main>div>.comment").text())
             else:
                 comments_count = int(d("#main>div>.comment").text())
         else:
@@ -117,18 +129,24 @@ def parse_articles():
         else:
             comments = []
 
-        print count, content, title
-
         doc = {
             "title": title,
             "content": content,
-            "url": link,
+            "url": url,
             "date": date,
             "commentsCount": comments_count,
             "comments": comments
         }
+        print content, title, comments_count == len(comments)
         bk55.insert(doc)
-        count += 1
+    else:
+        raise Exception("Response status code is " + response.status_code + ". URL: " + response.url)
+
+# for url in bk55_links.find_one()['links']:
+#     jobs.append(p.spawn(parse_article, url))
+#
+# gevent.joinall(jobs)
+
 
 # удалить p, li { white-space: pre-wrap; } в начале некоторых записей
 # count = 1

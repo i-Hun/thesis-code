@@ -2,19 +2,31 @@
 
 from gensim import corpora, models, similarities
 
-from collections import Counter # для теста. потом можно удалить
-
-# texts = [text["content"] for text in ngs.find()]
-
 
 def remove_alone(documents):
     """ На входе принимаем токенизированный список документов
     вида [[токен1, токен2], [токен1, токен3]]"""
 
     from collections import Counter
+
     c = Counter(token for document in documents for token in document)
-    alone = [token for token in document if c[token] > 1]
-    return [[token for token in document if c[token] > 1] for document in documents]
+
+    docs = []
+    single_count = 0
+
+    # Single line: [[token for token in document if c[token] > 1] for document in documents]
+    for document in documents:
+        doc = []
+        for token in document:
+            if c[token] < 2:
+                print "Одиночный токен: {0}".decode("utf8").format(token)
+                single_count += 1
+            else:
+                doc.append(token)
+        docs.append(doc)
+
+    print "Найдёно {0} уникальных токенов".format(single_count)
+    return docs
 
 
 def most_common(documents, count=10):
@@ -29,8 +41,8 @@ def most_common(documents, count=10):
         print '{0}: {1}'.format(val[0].encode('utf-8'), val[1])
 #
 
-# filtered = remove_alone(texts)
-# most_common(filtered, 20)
+# not_alone = remove_alone(texts)
+# most_common(not_alone, 20)
 #
 # ## Словарь - список уникальных токенов, каждому из которых присвоен id. {"токен": 0, "токен2": 1 ...}
 # dictionary = corpora.Dictionary(texts)
