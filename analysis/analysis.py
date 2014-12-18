@@ -1,6 +1,12 @@
 # -*- coding: utf-8 -*-
 
-from gensim import corpora, models, similarities
+from gensim import corpora, models
+import os.path
+from pymongo import MongoClient
+db = MongoClient().thesis
+raw_tokens = db.raw_tokens
+
+
 
 
 def find_infrequient(documents):
@@ -25,7 +31,7 @@ def find_infrequient(documents):
     for document in documents:
         for token in document:
             if c[token] <= 1:
-                print "Одиночный токен [{0}] встречается {1} раз".decode("utf8").format(token, c[token])
+                print "Токен [{0}] встречается {1} раз".decode("utf8").format(token, c[token])
                 infrequient.append(token)
 
     print "Общее количество токенов {0}. Найдёно {1} редких токенов".format(len(c), len(infrequient))
@@ -49,6 +55,99 @@ def most_common(documents, count=10):
         print '{0}: {1}'.format(val[0].encode('utf-8'), val[1])
 
 
+def get_dictionary(mode):  # solo или docfreq
+    """
+    Словарь - список уникальных токенов, каждому из которых присвоен id. {0: "токен1", 2: "токен2" ...}
+    Dictionary – a mapping between words and their integer ids.
+
+    Dictionaries can be created from a corpus and can later be pruned according to document
+    frequency (removing (un)common words via the Dictionary.filter_extremes() method),
+    save/loaded from disk (via Dictionary.save() and Dictionary.load() methods),
+    merged with other dictionary (Dictionary.merge_with()) etc.
+    """
+
+    file_path = "/home/hun/thesis-python/tmp/"
+
+    if mode == "solo":
+        file_path += "dictionary_solo.dict"
+    elif mode == "docfreq":
+        file_path += "dictionary_docfreq.dict"
+    else:
+        raise Exception("Укажите режим -- solo или docfreq")
+
+    dict_exists = os.path.isfile(file_path)
+
+    if dict_exists:
+        print "Загружаем словарь из файла " + file_path
+        dictionary = corpora.Dictionary.load(file_path)
+    else:
+        print "Создаём и сохраняем словарь"
+        if mode == "solo":
+            """
+            Создаёт словарь без токенов, которые встречаются только один раз
+            Работает долго.
+            """
+            texts = [document["content"] for document in raw_tokens.find(fields={"content": 1})]
+            dictionary = corpora.Dictionary(texts)
+            solo_tokens = find_infrequient(texts)
+            solo_ids = [id for id, token in dictionary.iteritems() if token in solo_tokens]
+            dictionary.filter_tokens(solo_ids)
+            dictionary.compactify()
+        elif mode == "docfreq":
+            """
+            Создаёт словарь без токенов, которые встречаются только в одном документе
+            Работает быстро.
+            """
+            texts = [document["content"] for document in raw_tokens.find(fields={"content": 1})]
+            dictionary = corpora.Dictionary(texts)
+            in_one_doc_ids = [tokenid for tokenid, docfreq in dictionary.dfs.iteritems() if docfreq == 1]
+            print "Найдено {0} токенов, которые встречаются только в одном документе".format(len(in_one_doc_ids))
+            dictionary.filter_tokens(in_one_doc_ids)
+            dictionary.compactify()
+        else:
+            raise Exception("Укажите режим -- solo или docfreq")
+    dictionary.save(file_path)
+    # print(dictionary)
+    return dictionary
+
+
+def get_corpus(dictionary):
+    """
+    Создаёт вектор вида [(0, 1), (1, 1)], где в первых скобках - id токенов, которые встречаются в документе,
+    а во вторых - их частота в данном конкретом документе.
+    http://radimrehurek.com/gensim/corpora/dictionary.html#gensim.corpora.dictionary.Dictionary
+    """
+    file_path = "/home/hun/thesis-python/tmp/corpus.mm"
+    corpus_exists = os.path.isfile(file_path)
+
+    if corpus_exists:
+        print "Загружаем корпус из файла " + file_path
+        corpus = corpora.MmCorpus(file_path)
+    else:
+        print "Создаём и сохраняем корпус"
+        texts = [document["content"] for document in raw_tokens.find(fields={"content": 1})]
+        """
+        The function doc2bow() simply counts the number of occurences of each distinct word,
+        converts the word to its integer word id and returns the result as a sparse vector.
+        The sparse vector [(0, 1), (1, 1)]
+        Если в словаре нет слова, то оно не учитывается
+        """
+        corpus = [dictionary.doc2bow(text) for text in texts]
+        corpora.MmCorpus.serialize(file_path, corpus)
+    # print(corpus)
+    return corpus
+
+
+def LDA(dictionary, corpus, num_topics, version):
+    file_path = "/home/hun/thesis-python/tmp/lda_{version}.model".format(version=version)
+    model_exists = os.path.isfile(file_path)
+    if model_exists:
+        lda = models.LdaModel.load(file_path)
+    else:
+        lda = models.ldamodel.LdaModel(corpus=corpus, id2word=dictionary, num_topics=num_topics)
+        lda.save(file_path)
+    return lda
+
 # # transformation between word-document co-occurrence matrix (integers) into a locally/globally weighted TF_IDF matrix
 # # http://radimrehurek.com/gensim/tutorial.html#first-example
 # tfidf = models.TfidfModel(corpus) # initialize (train) the transformation model
@@ -56,22 +155,4 @@ def most_common(documents, count=10):
 #
 # corpus_tfidf = tfidf[corpus]
 
-def LDA(corpus, dictionary=None):
-
-    """ LDA is yet another transformation from bag-of-words counts into a topic space
-    Вообще применять LDA надо на основе bow, но некоторые делают это
-    через tfidf (https://groups.google.com/forum/#!topic/gensim/OESG1jcaXaQ) """
-    lda = models.ldamodel.LdaModel(corpus=corpus, id2word=dictionary)
-    return lda
-#
-# lda = LDA(corpus, dictionary)
-#
-# for x in lda.show_topics(topics=lda.num_topics):
-#     print x
-#
-#
-# print(texts[1])
-# print(corpus[1])
-# print(lda[corpus[1]])
-# TODO: сохранить модель
-
+# что-то

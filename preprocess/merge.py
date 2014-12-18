@@ -1,12 +1,13 @@
 # -*- coding: utf-8 -*-
 import logging
+
 logging.basicConfig(format=u'%(filename)s[LINE:%(lineno)d]# %(levelname)-8s [%(asctime)s]  %(message)s')
 log = logging.getLogger("merge")
 
 from datetime import datetime
 
 from pymongo import MongoClient
-from preprocess import preprocess
+from preprocess import preprocess, remove_stopwords, replace_tokens
 
 client = MongoClient()
 db = client.thesis
@@ -25,10 +26,11 @@ def merge_collections():
 
 
 def make_tokens():
-    # FIXME если просто обновлять базу на новые значения
+    #FIXME
+    """ если просто обновлять базу на новые значения
     # general.update({"_id": doc["_id"]}, {"$set": {"content": tokens}})
     # то почему-то на некоторых документах функция препроцессинга применятеся дважды
-    # и возникает ошибка складывания строки с массивом (doc["title"] + " " + doc["content"])
+    # и возникает ошибка складывания строки с массивом (doc["title"] + " " + doc["content"])"""
     count = 1
     for doc in merged.find():
         print count
@@ -68,3 +70,5 @@ def validate_doc(doc):
 # for doc in raw_tokens.find():
 #     validate_doc(doc)
 #     print "Проверка завершена"
+
+

@@ -14,16 +14,12 @@ from pattern.en import tokenize
 
 import re
 
-# импортируем стоп-слова и конвертируем их в utf-8
 from nltk.corpus import stopwords
-stopwords_ru = stopwords.words('russian')
-additional_stopwords = []
-additional_stopwords = [unicode(stopword, 'utf-8') for stopword in additional_stopwords]
-stopwords_ru.extend(additional_stopwords)
 
 
 def replace_non_breaking_space(string):
     return string.replace(u'\xa0', u' ')
+
 
 def tokenize_regexp(text):
     # заменяем знаки препинания на пробелы u'.,\\/#!$%^&*;:{}=+_`~()\xab\xbb\u2014\u2026\u2013'
@@ -62,6 +58,11 @@ def remove_urls(text):
 
 
 def remove_stopwords(tokens):
+    stopwords_ru = stopwords.words('russian')
+    additional_stopwords = ["это", "который", "некоторый", "некоторые", "свой", "также", "однако", "тот", "быть", "такой", "другой", "стать", "однако", "етот", "наш", "говорить", "мы", "год", "очень", "весь", "ещё", "каждый", "мочь", "самый", "сказать", "хотеть", "просто", "оно", "ваш"]
+    additional_stopwords = additional_stopwords + ["омск-информ", "omskinform.ru", "omskinform", "бк55", "bk55.ru", "bk55", "город55", "gorod55.ru", "gorod55", "нгс", "ngs55.ru"]
+    additional_stopwords = [unicode(stopword, 'utf-8') for stopword in additional_stopwords]
+    stopwords_ru.extend(additional_stopwords)
     filtered_tokens = [w for w in tokens if not w in stopwords_ru]
     log.debug("Stopwords removed")
     return filtered_tokens
@@ -94,9 +95,53 @@ def stem_snowball(tokens):
     return stemmed
 
 
+def replace_tokens(tokens, replace_dict):
+    return [replace_dict[token] if token in replace_dict.keys() else token for token in tokens]
+
+
+#TODO сделать цепочки функций через декораторы или классы
 def preprocess(text):
-    return stem_pymorphy(remove_stopwords(remove_punct(tokenize_pattern(replace_non_breaking_space(text)))))
+    text = text.lower()
+    text = replace_non_breaking_space(text)
+    tokens = tokenize_pattern(text)
+    tokens = remove_punct(tokens)
+    tokens = stem_pymorphy(tokens)
+    tokens = remove_stopwords(tokens)
+    tokens = replace_tokens(tokens, {
+                                        u"ул": u"улица",
+                                        u"омский": u"омск",
+                                        u"рф": u"россия",
+                                        u"российский": u"россия",
+                                        u"етот": u"этот",
+                                        U"парка": u"парк",
+                                        u"ст": u"статья",
+                                        u"деньга": u"деньги",
+                                        u"расина": u"расин"
+                                    })
+    return tokens
 
 
 def clear_text(text):
     return " ".join(text.replace("\n", " ").replace("\r", " ").replace("\t", " ").split())
+
+
+def remove_words(collection, stopwords_list):
+    """
+    Удаление списка слов из поля content выбранной коллекции.
+    Тип поля content -- список слов
+    """
+    stopwords_list = [unicode(stopword, 'utf-8') for stopword in stopwords_list]
+    for doc in collection.find(fields={"content": 1, "_id": 1}):
+        if not set(stopwords_list).isdisjoint(set(doc["content"])):
+            new_content = [w for w in doc["content"] if not w in stopwords_list]
+            collection.update({"_id": doc["_id"]}, {"$set": {"content": new_content}})
+
+
+def replace_words(collection, replace_dict):
+    """
+    Заменя слов из поля content выбранной коллекции по указанному словарю.
+    Тип поля content -- список слов
+    """
+    for doc in collection.find(fields={"content": 1, "_id": 1}):
+        new_content = replace_tokens(doc["content"], replace_dict)
+        collection.update({"_id": doc["_id"]}, {"$set": {"content": new_content}})
