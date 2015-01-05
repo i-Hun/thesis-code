@@ -154,5 +154,3 @@ def LDA(dictionary, corpus, num_topics, version):
 # tfidf.save('/tmp/ngs.tfidf_model')
 #
 # corpus_tfidf = tfidf[corpus]
-
-# что-то

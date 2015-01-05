@@ -139,7 +139,7 @@ def remove_words(collection, stopwords_list):
 
 def replace_words(collection, replace_dict):
     """
-    Заменя слов из поля content выбранной коллекции по указанному словарю.
+    Замена слов из поля content выбранной коллекции по указанному словарю.
     Тип поля content -- список слов
     """
     for doc in collection.find(fields={"content": 1, "_id": 1}):
