@@ -66,7 +66,7 @@ def get_dictionary(mode):  # solo или docfreq
     merged with other dictionary (Dictionary.merge_with()) etc.
     """
 
-    file_path = "/home/hun/thesis-python/tmp/"
+    file_path = "../tmp/"
 
     if mode == "solo":
         file_path += "dictionary_solo.dict"
@@ -117,7 +117,7 @@ def get_corpus(dictionary):
     а во вторых - их частота в данном конкретом документе.
     http://radimrehurek.com/gensim/corpora/dictionary.html#gensim.corpora.dictionary.Dictionary
     """
-    file_path = "/home/hun/thesis-python/tmp/corpus.mm"
+    file_path = "../tmp/corpus.mm"
     corpus_exists = os.path.isfile(file_path)
 
     if corpus_exists:
@@ -139,7 +139,8 @@ def get_corpus(dictionary):
 
 
 def LDA(dictionary, corpus, num_topics, version):
-    file_path = "/home/hun/thesis-python/tmp/lda_{version}.model".format(version=version)
+    print "Построение модели LDA"
+    file_path = "../tmp/lda_{version}.model".format(version=version)
     model_exists = os.path.isfile(file_path)
     if model_exists:
         lda = models.LdaModel.load(file_path)

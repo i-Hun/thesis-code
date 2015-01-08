@@ -59,7 +59,7 @@ def remove_urls(text):
 
 def remove_stopwords(tokens):
     stopwords_ru = stopwords.words('russian')
-    additional_stopwords = ["это", "который", "некоторый", "некоторые", "свой", "также", "однако", "тот", "быть", "такой", "другой", "стать", "однако", "етот", "наш", "говорить", "мы", "год", "очень", "весь", "ещё", "каждый", "мочь", "самый", "сказать", "хотеть", "просто", "оно", "ваш"]
+    additional_stopwords = ["это", "который", "некоторый", "некоторые", "свой", "также", "однако", "тот", "быть", "такой", "другой", "стать", "етот", "наш", "говорить", "мы", "год", "очень", "весь", "ещё", "каждый", "мочь", "самый", "сказать", "хотеть", "просто", "оно", "ваш"]
     additional_stopwords = additional_stopwords + ["омск-информ", "omskinform.ru", "omskinform", "бк55", "bk55.ru", "bk55", "город55", "gorod55.ru", "gorod55", "нгс", "ngs55.ru"]
     additional_stopwords = [unicode(stopword, 'utf-8') for stopword in additional_stopwords]
     stopwords_ru.extend(additional_stopwords)
