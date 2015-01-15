@@ -149,6 +149,17 @@ def LDA(dictionary, corpus, num_topics, version):
         lda.save(file_path)
     return lda
 
+def hLDA(dictionary, corpus):
+    print "Построение модели hLDA"
+    file_path = "../tmp/hlda.model"
+    model_exists = os.path.isfile(file_path)
+    if model_exists:
+        hlda = models.HdpModel.load(file_path)
+    else:
+        hlda = models.hdpmodel.HdpModel(corpus=corpus, id2word=dictionary)
+        hlda.save(file_path)
+    return hlda
+
 # # transformation between word-document co-occurrence matrix (integers) into a locally/globally weighted TF_IDF matrix
 # # http://radimrehurek.com/gensim/tutorial.html#first-example
 # tfidf = models.TfidfModel(corpus) # initialize (train) the transformation model

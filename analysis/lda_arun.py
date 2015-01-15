@@ -8,7 +8,7 @@ import scipy.stats as stats
 from scipy.sparse import linalg as splinalg
 from scipy.sparse import *
 import matplotlib.pyplot as plt
-import h5py
+# import h5py
 
 from pymongo import MongoClient
 db = MongoClient().thesis
@@ -32,20 +32,23 @@ my_corpus = MyCorpus()
 
 l = np.array([sum(cnt for _, cnt in doc) for doc in my_corpus])
 def arun(corpus, dictionary, min_topics=20, max_topics=50, step=10):
+    print "Arun runing"
     kl = []
     for i in range(min_topics, max_topics, step):
         lda = LDA(dictionary, corpus, i, str(i) + "topics")
         m1 = lda.expElogbeta
-        U, cm1, V = splinalg.svds(m1, k=1)
+        U, cm1, V = np.linalg.svd(m1)
         #Document-topic matrix
         lda_topics = lda[my_corpus]
         m2 = matutils.corpus2dense(lda_topics, lda.num_topics).transpose()
         cm2 = l.dot(m2)
         cm2 = cm2 + 0.0001
+        print "cm2norm begin"
         cm2norm = np.linalg.norm(l)
+        print "cm2norm end"
         cm2 = cm2/cm2norm
-        cm2 = csr_matrix(cm2).todense()
-        print len(cm1), len(csr_matrix(cm2).todense())
+        # cm2 = csr_matrix(cm2).todense()
+        print len(cm1)
         kl.append(sym_kl(cm1, cm2))
     return kl
 
