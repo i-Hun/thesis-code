@@ -5,10 +5,18 @@ from __future__ import division
 from gensim import corpora, models, similarities, matutils
 import numpy as np
 import scipy.stats as stats
-from scipy.sparse import linalg as splinalg
-from scipy.sparse import *
+import pickle
 import matplotlib.pyplot as plt
+from matplotlib import rc
+from matplotlib import rc
+rc('font', **{'family': 'serif', 'size': 16, 'weight': 'normal'})
+rc('text', usetex=True)
+rc('text.latex', unicode=True)
+rc('text.latex', preamble=r"\usepackage[utf8]{inputenc}")
+rc('text.latex', preamble=r"\usepackage[russian]{babel}")
 # import h5py
+import scipy.sparse
+from sparsesvd import sparsesvd
 
 from pymongo import MongoClient
 db = MongoClient().thesis
@@ -31,13 +39,17 @@ class MyCorpus(object):
 my_corpus = MyCorpus()
 
 l = np.array([sum(cnt for _, cnt in doc) for doc in my_corpus])
-def arun(corpus, dictionary, min_topics=20, max_topics=50, step=10):
+def arun(corpus, dictionary, min_topics=10, max_topics=21, step=5):
     print "Arun runing"
-    kl = []
+    output = []
     for i in range(min_topics, max_topics, step):
-        lda = LDA(dictionary, corpus, i, str(i) + "topics")
+        lda = LDA(dictionary, corpus, i, "lda20/lda_training_" + str(i))
+        print "Модель построена/загружена"
         m1 = lda.expElogbeta
-        U, cm1, V = np.linalg.svd(m1)
+        # U, cm1, V = np.linalg.svd(m1)
+        smat = scipy.sparse.csc_matrix(m1)  # convert to sparse CSC format
+        U, cm1, V = sparsesvd(smat, i + 30)  # do SVD, asking for 100 factors
+        print "sparsesvd сделано"
         #Document-topic matrix
         lda_topics = lda[my_corpus]
         m2 = matutils.corpus2dense(lda_topics, lda.num_topics).transpose()
@@ -47,15 +59,23 @@ def arun(corpus, dictionary, min_topics=20, max_topics=50, step=10):
         cm2norm = np.linalg.norm(l)
         print "cm2norm end"
         cm2 = cm2/cm2norm
-        # cm2 = csr_matrix(cm2).todense()
-        print len(cm1)
-        kl.append(sym_kl(cm1, cm2))
-    return kl
+        print len(cm1), len(cm2)
+        kl = sym_kl(cm1, cm2)
+        output.append((i, kl))
+        print i, kl
+    print output
+    return output
 
-kl = arun(my_corpus, dictionary, min_topics=20, max_topics=50)
+# output = arun(my_corpus, dictionary, min_topics=5, max_topics=101)
 
+fileObject = open("../output/kl",'r')
+output = pickle.load(fileObject)
+
+num = [i[0] for i in output]
+kl = [i[1] for i in output]
 # Plot kl divergence against number of topics
-plt.plot(kl)
-plt.ylabel('Symmetric KL Divergence')
-plt.xlabel('Number of Topics')
-plt.savefig('kldiv.png', bbox_inches='tight')
+plt.plot(num, kl)
+plt.ylabel(u'Расстояние Кульбака — Лейблера')
+plt.xlabel(u'Количество тем')
+plt.savefig('../output/kldiv.png', bbox_inches='tight')
+plt.show()

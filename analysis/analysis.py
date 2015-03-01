@@ -66,7 +66,7 @@ def get_dictionary(mode):  # solo или docfreq
     merged with other dictionary (Dictionary.merge_with()) etc.
     """
 
-    file_path = "../tmp/"
+    file_path = "../output/"
 
     if mode == "solo":
         file_path += "dictionary_solo.dict"
@@ -117,7 +117,7 @@ def get_corpus(dictionary):
     а во вторых - их частота в данном конкретом документе.
     http://radimrehurek.com/gensim/corpora/dictionary.html#gensim.corpora.dictionary.Dictionary
     """
-    file_path = "../tmp/corpus.mm"
+    file_path = "../output/corpus.mm"
     corpus_exists = os.path.isfile(file_path)
 
     if corpus_exists:
@@ -138,20 +138,20 @@ def get_corpus(dictionary):
     return corpus
 
 
-def LDA(dictionary, corpus, num_topics, version):
+def LDA(dictionary, corpus, num_topics, version, passes=1):
     print "Построение модели LDA"
-    file_path = "../tmp/lda_{version}.model".format(version=version)
+    file_path = "../output/lda/{version}.model".format(version=version)
     model_exists = os.path.isfile(file_path)
     if model_exists:
         lda = models.LdaModel.load(file_path)
     else:
-        lda = models.ldamodel.LdaModel(corpus=corpus, id2word=dictionary, num_topics=num_topics)
+        lda = models.LdaMulticore(corpus=corpus, id2word=dictionary, num_topics=num_topics, passes=passes)
         lda.save(file_path)
     return lda
 
 def hLDA(dictionary, corpus):
     print "Построение модели hLDA"
-    file_path = "../tmp/hlda.model"
+    file_path = "../output/hlda/hlda.model"
     model_exists = os.path.isfile(file_path)
     if model_exists:
         hlda = models.HdpModel.load(file_path)
