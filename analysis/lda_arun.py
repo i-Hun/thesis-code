@@ -7,7 +7,7 @@ import numpy as np
 import scipy.stats as stats
 import pickle
 import matplotlib.pyplot as plt
-from matplotlib import rc
+
 from matplotlib import rc
 rc('font', **{'family': 'serif', 'size': 16, 'weight': 'normal'})
 rc('text', usetex=True)
@@ -77,5 +77,6 @@ kl = [i[1] for i in output]
 plt.plot(num, kl)
 plt.ylabel(u'Расстояние Кульбака — Лейблера')
 plt.xlabel(u'Количество тем')
-plt.savefig('../output/kldiv.png', bbox_inches='tight')
+plt.grid(True)
+# plt.savefig('../output/kl_div.png', bbox_inches='tight', dpi=300)
 plt.show()

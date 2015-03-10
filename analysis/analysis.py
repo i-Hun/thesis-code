@@ -7,8 +7,6 @@ db = MongoClient().thesis
 raw_tokens = db.raw_tokens
 
 
-
-
 def find_infrequient(documents):
     """ На входе принимаем токенизированный список документов
     вида [[токен1, токен2], [токен1, токен3]]
@@ -107,17 +105,17 @@ def get_dictionary(mode):  # solo или docfreq
         else:
             raise Exception("Укажите режим -- solo или docfreq")
     dictionary.save(file_path)
-    # print(dictionary)
+    print(dictionary)
     return dictionary
 
 
 def get_corpus(dictionary):
     """
-    Создаёт вектор вида [(0, 1), (1, 1)], где в первых скобках - id токенов, которые встречаются в документе,
+    Создаёт вектор вида [(0, 1), (1, 1)], где в первое значение в скобках - id токенов, которые встречаются в документе,
     а во вторых - их частота в данном конкретом документе.
     http://radimrehurek.com/gensim/corpora/dictionary.html#gensim.corpora.dictionary.Dictionary
     """
-    file_path = "../output/corpus.mm"
+    file_path = "../output/corpus_metadata.mm"
     corpus_exists = os.path.isfile(file_path)
 
     if corpus_exists:
@@ -133,7 +131,7 @@ def get_corpus(dictionary):
         Если в словаре нет слова, то оно не учитывается
         """
         corpus = [dictionary.doc2bow(text) for text in texts]
-        corpora.MmCorpus.serialize(file_path, corpus)
+        corpora.MmCorpus.serialize(file_path, corpus, metadata=True)
     # print(corpus)
     return corpus
 
@@ -159,10 +157,3 @@ def hLDA(dictionary, corpus):
         hlda = models.hdpmodel.HdpModel(corpus=corpus, id2word=dictionary)
         hlda.save(file_path)
     return hlda
-
-# # transformation between word-document co-occurrence matrix (integers) into a locally/globally weighted TF_IDF matrix
-# # http://radimrehurek.com/gensim/tutorial.html#first-example
-# tfidf = models.TfidfModel(corpus) # initialize (train) the transformation model
-# tfidf.save('/tmp/ngs.tfidf_model')
-#
-# corpus_tfidf = tfidf[corpus]
