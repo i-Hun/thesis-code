@@ -16,7 +16,7 @@ def senti_attr():
             doc_senti = 0
             for comment in doc["comments"]:
                 comment_rating = RateSentiment(comment.encode('utf8'))
-                print comment, comment_rating.rate()
+                print comment, comment_rating.explain()
                 doc_senti += comment_rating.rate()
             for topic, prob in doc["topics"]:
                 if topic not in struct:

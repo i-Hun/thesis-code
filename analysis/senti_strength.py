@@ -1,7 +1,14 @@
 # -*- coding: utf-8 -*-
 import shlex
 import subprocess
+import platform
 
+if platform.system() == "Darwin":
+    os_specific_path = "/Users/olegnagornyy"
+else:
+    os_specific_path = "/home/hun/"
+
+print os_specific_path
 
 class RateSentiment(object):
     def __init__(self, text):
@@ -10,9 +17,9 @@ class RateSentiment(object):
     def senti_tuple(self):
         #open a subprocess using shlex to get the command line string into the correct args list format
         # добавить параметр explain для объяснения вывода изменить на
-        p = subprocess.Popen(shlex.split("java -jar /home/hun/Thesis/senti/SentiStrengthCom.jar stdin noDictionary illegalDoubleLettersInWordMiddle"
+        p = subprocess.Popen(shlex.split("java -jar {0}/Thesis/senti/SentiStrengthCom.jar stdin noDictionary illegalDoubleLettersInWordMiddle"
                                          " ёйухцчщьыъ illegalDoubleLettersAtWordEnd абвгджзйкоуфхцчщэ UTF8 urlencoded sentidata "
-                                         "/home/hun/Thesis/senti/dict/ru/"),
+                                         "{0}/Thesis/senti/dict/ru/".format(os_specific_path)),
                              stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         #communicate via stdin the string to be rated. Note that all spaces are replaced with +
         stdout_text, stderr_text = p.communicate(self.text.replace(" ", "+"))
@@ -27,9 +34,9 @@ class RateSentiment(object):
         return self.senti_tuple()[0] + self.senti_tuple()[1]
 
     def explain(self):
-        p = subprocess.Popen(shlex.split("java -jar /home/hun/Thesis/senti/SentiStrengthCom.jar stdin noDictionary explain illegalDoubleLettersInWordMiddle"
+        p = subprocess.Popen(shlex.split("java -jar {0}/Thesis/senti/SentiStrengthCom.jar stdin noDictionary illegalDoubleLettersInWordMiddle"
                                          " ёйухцчщьыъ illegalDoubleLettersAtWordEnd абвгджзйкоуфхцчщэ UTF8 urlencoded sentidata "
-                                         "/home/hun/Thesis/senti/dict/ru/"),
+                                         "{0}/Thesis/senti/dict/ru/".format(os_specific_path)),
                              stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         stdout_text, stderr_text = p.communicate(self.text.replace(" ", "+"))
         stdout_text = stdout_text.rstrip().replace("\t","")
@@ -41,9 +48,9 @@ class RateSentiment(object):
 def tuple_from_dict():
     import codecs
 
-    path1 = "/home/hun/Thesis/senti/dict/ru/EmotionLookupTable.txt"
-    path2 = "/home/hun/Thesis/senti/dict/ru2/EmotionLookupTable.txt"
-    path3 = "/home/hun/Thesis/senti/dict/ru3/EmotionLookupTable.txt"
+    path1 = "~/Thesis/senti/dict/ru/EmotionLookupTable.txt"
+    path2 = "~/Thesis/senti/dict/ru2/EmotionLookupTable.txt"
+    path3 = "~/Thesis/senti/dict/ru3/EmotionLookupTable.txt"
 
     dict1 = []
     dict2 = []
