@@ -70,5 +70,3 @@ def validate_doc(doc):
 # for doc in raw_tokens.find():
 #     validate_doc(doc)
 #     print "Проверка завершена"
-
-

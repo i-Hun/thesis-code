@@ -1,21 +1,28 @@
 # -*- coding: utf-8 -*-
 from __future__ import division
-from pymongo import MongoClient
-from senti_strength import rate_sentiment
+import pymongo
+from senti_strength import RateSentiment
 import datetime
 import moment
+import numpy as np
+from settings import config
+from topics import general_topic_distribution
 
 import matplotlib.pyplot as plt
+import matplotlib.patches as mpatches
 import matplotlib.mlab as mlab
 import matplotlib.dates as mdates
 from matplotlib import rc
-rc('font', **{'family': 'serif', 'size': 16, 'weight': 'normal'})
-rc('text', usetex=True)
-rc('text.latex', unicode=True)
-rc('text.latex', preamble=r"\usepackage[utf8]{inputenc}")
-rc('text.latex', preamble=r"\usepackage[russian]{babel}")
+font = {
+    'family': config.get("tex_font_family"),
+    'weight': 'normal',
+    'size': config.get("tex_font_size")
+}
+rc('font', **font)
 
-client = MongoClient()
+from analysis import LDA, get_dictionary, get_corpus
+
+client = pymongo.MongoClient()
 db = client.thesis
 
 
@@ -34,31 +41,177 @@ def count_comments():
     print "Количество документов: {docs_count}, из них с комментариями {docs_with_comments}. Всего комментариев {comments_amount}. Среднее количество комментариев {comments_average}."\
         .format(docs_count=db.docs_topics.count(), docs_with_comments=docs_with_comments, comments_amount=comments_amount, comments_average=comments_amount/db.docs_topics.count())
 
-    plot_list.sort(key=lambda tup: tup[0])
-    print plot_list
-    x = [i[0] for i in plot_list]
-    y = [i[1] for i in plot_list]
+
+def daterange(start_date=datetime.datetime(2013, 8, 30), end_date=datetime.datetime(2014, 9, 01)):
+    for n in range(int ((end_date - start_date).days)):
+        yield start_date + datetime.timedelta(n)
+
+#################################################################################################
+
+def comments_count_by_day():
+    dict = {}
+    db.docs_topics.ensure_index([("date", pymongo.ASCENDING)])
+    for doc in db.docs_topics.find().sort("date", pymongo.ASCENDING):
+        if doc["date"] not in dict.keys():
+            dict[doc["date"]] = [1, doc["commentsCount"]]
+        else:
+            dict[doc["date"]][0] += 1
+            dict[doc["date"]][1] += doc["commentsCount"]
+    return dict
+
+
+def comments_count_by_day_complete():
+
+    date_dict = comments_count_by_day()
+
+    weekend_comments = []
+    weekday_comments = []
+
+    a = comments_count_by_day().items()
+    a = sorted(a, key=lambda x: x[0], reverse=False)
+    a = [(date, scores[1]) for date, scores in a]
 
     fig, ax = plt.subplots()
-    ax.plot(x, y)
-    ax.set_ylabel(u'Количество комментариев')
+    ax.plot(*zip(*a))
+    for i, single_date in enumerate(daterange()):
+        print i
+        if single_date.weekday() == 5:
+            x_list = [single_date, single_date + datetime.timedelta(1)]
+            y_list = [date_dict[single_date][1], date_dict[single_date + datetime.timedelta(1)][1]]
+            weekend_comments.extend(y_list)
+            print x_list
+            ax.fill_between(x_list, y_list, alpha=0.3, color='#FF8E8E')
+        elif (single_date.weekday() != 5) and (single_date.weekday() != 6):
+            weekday_comments.append(date_dict[single_date][1])
+            print single_date.weekday()
+
+    ax.set_ylabel(u'Количество комментариев за день')
     ax.set_xlabel(u'Дата')
+
+    red_patch = mpatches.Patch(color='#FF8E8E', alpha=0.4, label=u"Суббота и воскресенье")
+    plt.legend(handles=[red_patch], fontsize=14)
+
     ax.format_xdata = mdates.DateFormatter('%Y-%m-%d')
-    fig.autofmt_xdate()
+    fig.autofmt_xdate()  # поворачивает надписи даты
     ax.grid(True)
-    plt.savefig('../output/comments.png', bbox_inches='tight', dpi=300)
+    for ext in config.get("tex_image_format"):
+        plt.savefig(config.get("tex_image_path") + "comments_by_day." + ext,
+                format=ext, bbox_inches='tight', dpi=1200)
     plt.show()
 
+    print weekend_comments
+    print weekday_comments
+    print sum(weekend_comments), len(weekend_comments)
+    print sum(weekday_comments), len(weekday_comments)
 
-def rate_comments(collection):
-    docs = collection.find({}, {"comments": 1})
-    print(docs.count())
-    for doc in docs:
-        print len(doc["comments"])
-        if len(doc["comments"]) != 0:
-            for comment in doc["comments"]:
-                print comment
-                print rate_sentiment(comment.encode('utf8'))
+###################################################
 
 
-count_comments()
+def number_of_docs_by_day():
+    date_dict = {date: db.docs_topics.find({"date": date}).count() for date in daterange()}
+    print date_dict
+
+    weekend = []
+    weekday = []
+
+    fig, ax = plt.subplots()
+
+    for i, single_date in enumerate(daterange()):
+        print i
+        if single_date.weekday() == 5:
+            x_list = [single_date, single_date + datetime.timedelta(1)]
+            y_list = [date_dict[single_date], date_dict[single_date + datetime.timedelta(1)]]
+            weekend.extend(y_list)
+            print x_list
+            ax.fill_between(x_list, y_list, alpha=0.3, color='#FF8E8E')
+        elif (single_date.weekday() != 5) and (single_date.weekday() != 6):
+            weekday.append(date_dict[single_date])
+            print single_date.weekday()
+
+    red_patch = mpatches.Patch(color='#FF8E8E', alpha=0.4, label=u"Суббота и воскресенье")
+    plt.legend(handles=[red_patch], fontsize=14)
+
+    a = sorted(date_dict.items(), key=lambda x: x[0], reverse=False)
+    ax.plot(*zip(*a))
+    ax.set_ylabel(u'Количество статей')
+    ax.set_xlabel(u'Дата')
+    ax.format_xdata = mdates.DateFormatter('%Y-%m-%d')
+    fig.autofmt_xdate()  # поворачивает надписи даты
+    fig.set_figwidth(11)
+    ax.grid(True)
+    for ext in config.get("tex_image_format"):
+        plt.savefig(config.get("tex_image_path") + "docs_by_day." + ext,
+                format=ext, bbox_inches='tight', dpi=1200)
+    plt.show()
+    print sum(weekend), len(weekend), sum(weekend)/len(weekend)
+    print sum(weekday), len(weekday), sum(weekday)/len(weekday)
+
+###################################################
+
+
+def comments_by_topics():
+    """
+    Здесь документу соответсвует только одна тема, к которой он относится с наибольшей вероятностью
+    {"номер темы": [количество документов, количество комментов]}
+    """
+    struct = {}
+    for doc in db.docs_topics.find():
+        top_topic = sorted(doc["topics"], key=lambda x: x[1], reverse=True)[0][0]
+        if top_topic not in struct.keys():
+            struct[top_topic] = [1, doc["commentsCount"]]
+        else:
+            struct[top_topic][1] += doc["commentsCount"]
+            struct[top_topic][0] += 1
+
+    return struct
+
+
+def most_commented_topics1():
+    a = []
+    for topic, j in comments_by_topics().items():
+        a.append((topic, j[1]/j[0]))
+
+    print sorted(a, key=lambda x: x[1], reverse=True)
+
+
+def most_commented_topics2():
+    """
+    Выводит список тем с индексом комментируемости, рассчитанным как произведение количество комментов к документу,
+     на вероятность отнесения документа к теме.
+
+     Эти значения не очень полезны, посколько на них влияет распространённость темы, а нам нужна комментируемость.
+    """
+    struct = {}
+    for doc in db.docs_topics.find():
+        for topic, prob in doc["topics"]:
+            if topic not in struct:
+                struct[topic] = prob * doc["commentsCount"]
+            else:
+                struct[topic] += prob * doc["commentsCount"]
+
+    print sorted(struct.items(), key=lambda x: x[1], reverse=True)
+
+def most_commented_topics3():
+    """
+    Как most_commented_topics2, только умножаем на распространённость темы
+    """
+    struct = {}
+    result = {}
+    topics_distr = general_topic_distribution()
+
+    for doc in db.docs_topics.find():
+        for topic, prob in doc["topics"]:
+            if topic not in struct:
+                struct[topic] = prob * doc["commentsCount"]
+            else:
+                struct[topic] += prob * doc["commentsCount"]
+
+    struct = struct.items()
+
+    for i in struct:
+        print i, topics_distr[i[0]]
+        result[i[0]] = i[1] / topics_distr[i[0]]
+
+    return sorted(result.items(), key=lambda x: x[1], reverse=True)
+
+print most_commented_topics3()

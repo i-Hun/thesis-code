@@ -3,8 +3,7 @@
 from gensim import corpora, models
 import os.path
 from pymongo import MongoClient
-db = MongoClient().thesis
-raw_tokens = db.raw_tokens
+raw_tokens = MongoClient().thesis.raw_tokens
 
 
 def find_infrequient(documents):
@@ -145,6 +144,7 @@ def LDA(dictionary, corpus, num_topics, version, passes=1):
     else:
         lda = models.LdaMulticore(corpus=corpus, id2word=dictionary, num_topics=num_topics, passes=passes)
         lda.save(file_path)
+    print "Модель построена"
     return lda
 
 def hLDA(dictionary, corpus):
@@ -154,6 +154,7 @@ def hLDA(dictionary, corpus):
     if model_exists:
         hlda = models.HdpModel.load(file_path)
     else:
-        hlda = models.hdpmodel.HdpModel(corpus=corpus, id2word=dictionary)
+        hlda = models.hdpmodel.HdpModel(corpus=corpus, id2word=dictionary, T=500)
         hlda.save(file_path)
+    print "Модель построена"
     return hlda

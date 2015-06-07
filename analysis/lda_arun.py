@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import division
-# import logging
-# logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
+from settings import config
+
 from gensim import corpora, models, similarities, matutils
 import numpy as np
 import scipy.stats as stats
@@ -9,12 +9,13 @@ import pickle
 import matplotlib.pyplot as plt
 
 from matplotlib import rc
-rc('font', **{'family': 'serif', 'size': 16, 'weight': 'normal'})
-rc('text', usetex=True)
-rc('text.latex', unicode=True)
-rc('text.latex', preamble=r"\usepackage[utf8]{inputenc}")
-rc('text.latex', preamble=r"\usepackage[russian]{babel}")
-# import h5py
+font = {
+    'family': config.get("tex_font_family"),
+    'weight': 'normal',
+    'size': config.get("tex_font_size")
+}
+rc('font', **font)
+
 import scipy.sparse
 from sparsesvd import sparsesvd
 
@@ -68,15 +69,18 @@ def arun(corpus, dictionary, min_topics=10, max_topics=21, step=5):
 
 # output = arun(my_corpus, dictionary, min_topics=5, max_topics=101)
 
-fileObject = open("../output/kl",'r')
+fileObject = open("../output/kl", 'r')
 output = pickle.load(fileObject)
 
 num = [i[0] for i in output]
 kl = [i[1] for i in output]
-# Plot kl divergence against number of topics
-plt.plot(num, kl)
+
+plt.plot(num, kl, 'o-')
 plt.ylabel(u'Расстояние Кульбака — Лейблера')
 plt.xlabel(u'Количество тем')
 plt.grid(True)
-# plt.savefig('../output/kl_div.png', bbox_inches='tight', dpi=300)
+plt.xlim(0, 105)
+for ext in config.get("tex_image_format"):
+    plt.savefig(config.get("tex_image_path") + "kl_div." + ext, bbox_inches='tight', format=ext, dpi=1200)
 plt.show()
+

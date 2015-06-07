@@ -13,31 +13,25 @@ docs_topics = db.docs_topics
 dictionary = get_dictionary("solo")
 corpus = get_corpus(dictionary)
 
-# doc_ids = random.sample(range(1, 1000), 50)
-# filtered = filter(lambda enum_bow: enum_bow[0] in doc_ids, enumerate(corpus[:1000]))
-# subset = [bow for enum, bow in filtered]  # убрать ограничения
 
-
-
-def topic_distribution_subset(subset):
+def general_topic_distribution():
     """
     Суммируем вектора. Насчёт деления на количество векторов не уверен
     """
     from collections import OrderedDict
     topic_distribution_dict = {}
     model = LDA(dictionary, corpus, 50, "lda20/lda_training_50")
-    for doc_bow in subset:
-        topic_distribution = model[doc_bow]
+    for doc in docs_topics.find():
+        topic_distribution = doc["topics"]
         for topic_id, score in topic_distribution:
             if topic_id not in topic_distribution_dict.keys():
                 topic_distribution_dict[topic_id] = score
-
             else:
                 topic_distribution_dict[topic_id] += score
     for i in topic_distribution_dict.iteritems():
-        topic_distribution_dict[i[0]] = i[1]/len(subset)
+        topic_distribution_dict[i[0]] = i[1]/docs_topics.count()
 
-    return sorted(topic_distribution_dict.items(), key=lambda x: x[1], reverse=True)
+    return topic_distribution_dict
 
 
 def average_topics(threshold=0.01):
@@ -64,7 +58,8 @@ def average_topics(threshold=0.01):
 
 def sinle_topic():
     """
-    Определим одну самую вероятную тема для каждого документа. Возратим массив этих тем.
+    Определим одну самую вероятную тема для каждого документа. Результат --
+    список тем с указанием количества документов, которые могут быть отнесены к ней с наибольшей вероятностью
     """
     from collections import Counter
 
@@ -104,6 +99,9 @@ def create_single_vector():
 
 
 def create_single_vector2():
+    """
+    Результат такой же, что и в первом варианте функции. Но достигается за счёт складывания непосредственно текстов
+    """
     texts = (document["content"] for document in raw_tokens.find(fields={"content": 1}))
     # texts = sum(texts, [])
     new_list = []
@@ -116,11 +114,16 @@ def create_single_vector2():
     topics_distribution = model[corp]
     print sorted(topics_distribution, key=lambda x: x[1], reverse=True)
 
-model = LDA(dictionary, corpus, 50, "lda20/lda_training_50")
-for i, document in enumerate(raw_tokens.find()):
 
-    doc_bow = dictionary.doc2bow(document["content"])
-    topics_distr = model[doc_bow]
-    topics_distr = sorted(topics_distr, key=lambda x: x[1], reverse=True)
-    if topics_distr[0][0] == 2:  #номер интересующей нас темы
-        print document["url"], topics_distr[0], topics_distr[1], document["title"]
+def docs_with_this_topic(topic_id):
+    """
+    Возвращает документы, в которых выборанная тема стоит на первом месте
+    """
+    model = LDA(dictionary, corpus, 50, "lda20/lda_training_50")
+    for i, document in enumerate(raw_tokens.find()):
+
+        doc_bow = dictionary.doc2bow(document["content"])
+        topics_distr = model[doc_bow]
+        topics_distr = sorted(topics_distr, key=lambda x: x[1], reverse=True)
+        if topics_distr[0][0] == topic_id:  #номер интересующей нас темы
+            print document["url"], topics_distr[0], topics_distr[1], document["title"]
