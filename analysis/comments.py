@@ -5,8 +5,10 @@ from senti_strength import RateSentiment
 import datetime
 import moment
 import numpy as np
-from settings import config
 from topics import general_topic_distribution
+from settings import config
+import os.path
+import pickle
 
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
@@ -195,23 +197,30 @@ def most_commented_topics3():
     """
     Как most_commented_topics2, только умножаем на распространённость темы
     """
-    struct = {}
-    result = {}
-    topics_distr = general_topic_distribution()
+    path = "{0}/Thesis/code/output/topics/most_commented_topic".format(config.get("home_path"))
+    data_exists = os.path.isfile(path)
 
-    for doc in db.docs_topics.find():
-        for topic, prob in doc["topics"]:
-            if topic not in struct:
-                struct[topic] = prob * doc["commentsCount"]
-            else:
-                struct[topic] += prob * doc["commentsCount"]
+    if data_exists:
+        fileObject = open(path, 'rb')
+        return pickle.load(fileObject)
+    else:
+        struct = {}
+        result = {}
+        topics_distr = general_topic_distribution()
 
-    struct = struct.items()
+        for doc in db.docs_topics.find():
+            for topic, prob in doc["topics"]:
+                if topic not in struct:
+                    struct[topic] = prob * doc["commentsCount"]
+                else:
+                    struct[topic] += prob * doc["commentsCount"]
 
-    for i in struct:
-        print i, topics_distr[i[0]]
-        result[i[0]] = i[1] / topics_distr[i[0]]
+        struct = struct.items()
 
-    return sorted(result.items(), key=lambda x: x[1], reverse=True)
+        for i in struct:
+            print i, topics_distr[i[0]]
+            result[i[0]] = i[1] / topics_distr[i[0]]
 
-print most_commented_topics3()
+        result = sorted(result.items(), key=lambda x: x[1], reverse=True)
+        pickle.dump(result, open(path, "wb"))
+        return result

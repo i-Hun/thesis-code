@@ -131,7 +131,7 @@ def remove_words(collection, stopwords_list):
     Тип поля content -- список слов
     """
     stopwords_list = [unicode(stopword, 'utf-8') for stopword in stopwords_list]
-    for doc in collection.find(fields={"content": 1, "_id": 1}):
+    for doc in collection.find(projection={"content": 1, "_id": 1}):
         if not set(stopwords_list).isdisjoint(set(doc["content"])):
             new_content = [w for w in doc["content"] if not w in stopwords_list]
             collection.update({"_id": doc["_id"]}, {"$set": {"content": new_content}})
@@ -142,6 +142,6 @@ def replace_words(collection, replace_dict):
     Замена слов из поля content выбранной коллекции по указанному словарю.
     Тип поля content -- список слов
     """
-    for doc in collection.find(fields={"content": 1, "_id": 1}):
+    for doc in collection.find(projection={"content": 1, "_id": 1}):
         new_content = replace_tokens(doc["content"], replace_dict)
         collection.update({"_id": doc["_id"]}, {"$set": {"content": new_content}})

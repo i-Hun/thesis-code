@@ -34,7 +34,7 @@ dictionary = get_dictionary("solo")
 
 class MyCorpus(object):
     def __iter__(self):
-        for doc in raw_tokens.find(fields={"content": 1}):
+        for doc in raw_tokens.find(projection={"content": 1}):
             yield dictionary.doc2bow(doc["content"])
 
 my_corpus = MyCorpus()

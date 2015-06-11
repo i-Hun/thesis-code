@@ -84,7 +84,7 @@ def get_dictionary(mode):  # solo или docfreq
             Создаёт словарь без токенов, которые встречаются только один раз
             Работает долго.
             """
-            texts = [document["content"] for document in raw_tokens.find(fields={"content": 1})]
+            texts = [document["content"] for document in raw_tokens.find(projection={"content": 1})]
             dictionary = corpora.Dictionary(texts)
             solo_tokens = find_infrequient(texts)
             solo_ids = [id for id, token in dictionary.iteritems() if token in solo_tokens]
@@ -95,7 +95,7 @@ def get_dictionary(mode):  # solo или docfreq
             Создаёт словарь без токенов, которые встречаются только в одном документе
             Работает быстро.
             """
-            texts = [document["content"] for document in raw_tokens.find(fields={"content": 1})]
+            texts = [document["content"] for document in raw_tokens.find(projection={"content": 1})]
             dictionary = corpora.Dictionary(texts)
             in_one_doc_ids = [tokenid for tokenid, docfreq in dictionary.dfs.iteritems() if docfreq == 1]
             print "Найдено {0} токенов, которые встречаются только в одном документе".format(len(in_one_doc_ids))
@@ -122,7 +122,7 @@ def get_corpus(dictionary):
         corpus = corpora.MmCorpus(file_path)
     else:
         print "Создаём и сохраняем корпус"
-        texts = [document["content"] for document in raw_tokens.find(fields={"content": 1})]
+        texts = [document["content"] for document in raw_tokens.find(projection={"content": 1})]
         """
         The function doc2bow() simply counts the number of occurences of each distinct word,
         converts the word to its integer word id and returns the result as a sparse vector.

@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from __future__ import division
+from settings import config
 
 import pymongo
 client = pymongo.MongoClient()
@@ -35,7 +36,7 @@ def rate_comment_by_expert():
 
     comments = []
     evaluated = []
-    path = "/home/hun/Thesis/senti/"
+    path = "{0}/Thesis/senti/".format(config.get("home_path"))
 
     sample_exist = os.path.isfile(path + "comments_sample")
 
@@ -67,10 +68,8 @@ def rate_comment_by_expert():
         print "___________________________________"
 
 
-# import pickle
-# path = "/home/hun/Thesis/senti/"
-# sample = pickle.load(open(path + "comments_sample", 'rb'))
-# rated = pickle.load(open(path + "rated_comments", 'rb'))
-# print rated[-1][0], len(rated), sample[203]
-
-senti_attr()
+import pickle
+path = "{0}/Thesis/senti/".format(config.get("home_path"))
+sample = pickle.load(open(path + "comments_sample", 'rb'))
+rated = pickle.load(open(path + "rated_comments", 'rb'))
+print rated[-1][0], len(rated), sample[203]
