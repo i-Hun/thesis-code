@@ -4,7 +4,7 @@ import platform
 if platform.system() == "Darwin":
     os_specific_path = "/Users/olegnagornyy"
 else:
-    os_specific_path = "/home/hun/"
+    os_specific_path = "/home/hun"
 
 def get(key):
     d = {

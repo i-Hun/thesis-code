@@ -68,8 +68,11 @@ def rate_comment_by_expert():
         print "___________________________________"
 
 
-import pickle
-path = "{0}/Thesis/senti/".format(config.get("home_path"))
-sample = pickle.load(open(path + "comments_sample", 'rb'))
-rated = pickle.load(open(path + "rated_comments", 'rb'))
-print rated[-1][0], len(rated), sample[203]
+# import pickle
+# path = "{0}/Thesis/senti/".format(config.get("home_path"))
+# sample = pickle.load(open(path + "comments_sample", 'rb'))
+# rated = pickle.load(open(path + "rated_comments", 'rb'))
+# print rated[-1][0], len(rated), sample[203]
+
+# sent = RateSentiment("абва", "ru_test")
+# print sent.explain()

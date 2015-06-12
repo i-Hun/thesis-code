@@ -5,15 +5,16 @@ import platform
 from settings import config
 
 class RateSentiment(object):
-    def __init__(self, text):
+    def __init__(self, text, dict_name="ru"):
         self.text = text
+        self.dict_name = dict_name
 
     def senti_tuple(self):
         #open a subprocess using shlex to get the command line string into the correct args list format
         # добавить параметр explain для объяснения вывода изменить на
         p = subprocess.Popen(shlex.split("java -jar {0}/Thesis/senti/SentiStrengthCom.jar stdin noDictionary illegalDoubleLettersInWordMiddle"
                                          " ёйухцчщьыъ illegalDoubleLettersAtWordEnd абвгджзйкоуфхцчщэ UTF8 urlencoded sentidata "
-                                         "{0}/Thesis/senti/dict/ru/".format(config.get("home_path"))),
+                                         "{0}/Thesis/senti/dict/{1}/".format(config.get("home_path"), self.dict_name)),
                              stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         #communicate via stdin the string to be rated. Note that all spaces are replaced with +
         stdout_text, stderr_text = p.communicate(self.text.replace(" ", "+"))
@@ -30,7 +31,7 @@ class RateSentiment(object):
     def explain(self):
         p = subprocess.Popen(shlex.split("java -jar {0}/Thesis/senti/SentiStrengthCom.jar stdin noDictionary illegalDoubleLettersInWordMiddle"
                                          " ёйухцчщьыъ illegalDoubleLettersAtWordEnd абвгджзйкоуфхцчщэ UTF8 urlencoded explain sentidata "
-                                         "{0}/Thesis/senti/dict/ru/".format(config.get("home_path"))),
+                                         "{0}/Thesis/senti/dict/{1}/".format(config.get("home_path"), self.dict_name)),
                              stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         stdout_text, stderr_text = p.communicate(self.text.replace(" ", "+"))
         print self.text.replace(" ", "+")

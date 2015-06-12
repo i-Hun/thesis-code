@@ -90,9 +90,12 @@ def stem_pymorphy(tokens):
 
 def stem_snowball(tokens):
     stemmer = SnowballStemmer("russian")
-    stemmed = [stemmer.stem(token) for token in tokens]
-    log.debug("Stemmed with Snowball")
-    return stemmed
+
+    if isinstance(tokens, basestring):
+        return stemmer.stem(tokens)
+    else:
+        stemmed = [stemmer.stem(token) for token in tokens]
+        return stemmed
 
 
 def replace_tokens(tokens, replace_dict):
