@@ -111,21 +111,21 @@ def preprocess(text):
     tokens = stem_pymorphy(tokens)
     tokens = remove_stopwords(tokens)
     tokens = replace_tokens(tokens, {
-                                        u"ул": u"улица",
-                                        u"омский": u"омск",
-                                        u"рф": u"россия",
-                                        u"российский": u"россия",
-                                        u"етот": u"этот",
-                                        U"парка": u"парк",
-                                        u"ст": u"статья",
-                                        u"деньга": u"деньги",
-                                        u"расина": u"расин"
-                                    })
+        u"ул": u"улица",
+        u"омский": u"омск",
+        u"рф": u"россия",
+        u"российский": u"россия",
+        u"етот": u"этот",
+        U"парка": u"парк",
+        u"ст": u"статья",
+        u"деньга": u"деньги",
+        u"расина": u"расин"
+    })
     return tokens
 
 
 def clear_text(text):
-    return " ".join(text.replace("\n", " ").replace("\r", " ").replace("\t", " ").split())
+    return text.replace("\n", " ").replace("\r", " ").replace("\t", " ")
 
 
 def remove_words(collection, stopwords_list):

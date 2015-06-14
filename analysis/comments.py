@@ -3,7 +3,6 @@ from __future__ import division
 import pymongo
 from senti_strength import RateSentiment
 import datetime
-import moment
 import numpy as np
 from topics import general_topic_distribution
 from settings import config
@@ -155,6 +154,7 @@ def comments_by_topics():
     """
     Здесь документу соответсвует только одна тема, к которой он относится с наибольшей вероятностью
     {"номер темы": [количество документов, количество комментов]}
+    Для этой темы определяем среднее количество комментариев
     """
     struct = {}
     for doc in db.docs_topics.find():
@@ -196,6 +196,8 @@ def most_commented_topics2():
 def most_commented_topics3():
     """
     Как most_commented_topics2, только умножаем на распространённость темы
+    for num, i in enumerate(most_commented_topics3()):
+        print "{num} & {topic} & {percent}\\% \\\\".format(num=num+1, topic=i[0], percent=round(i[1]/466794.4839104599 * 100, 1))
     """
     path = "{0}/Thesis/code/output/topics/most_commented_topic".format(config.get("home_path"))
     data_exists = os.path.isfile(path)

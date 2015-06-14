@@ -2,6 +2,7 @@
 
 from lxml import etree
 from pymongo import MongoClient
+from settings import config
 
 db = MongoClient().thesis.merged
 
@@ -21,6 +22,6 @@ for doc in db.find():
 
 xml_str = etree.tostring(corpus, pretty_print=True)
 
-outFile = open("/home/hun/Thesis/omsk_media.xml", 'w')
+outFile = open("{0}/Thesis/omsk_media.xml".format(config.get("home_path")), 'w')
 outFile.write(xml_str)
 outFile.close()

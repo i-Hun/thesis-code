@@ -27,9 +27,7 @@ def general_topic_distribution():
         fileObject = open(path, 'rb')
         return pickle.load(fileObject)
     else:
-        from collections import OrderedDict
         topic_distribution_dict = {}
-        model = LDA(dictionary, corpus, 50, "lda20/lda_training_50")
         for doc in docs_topics.find():
             topic_distribution = doc["topics"]
             for topic_id, score in topic_distribution:

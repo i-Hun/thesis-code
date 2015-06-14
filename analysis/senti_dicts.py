@@ -62,6 +62,8 @@ def expand_words(path_in, path_out):
 
 
 def remove_duplicates(path):
+    #TODO не обрабатывается ситуация с разными баллами у одного слова
+
     path = "{0}/Thesis/senti/dict/{1}/EmotionLookupTable.txt".format(config.get("home_path"), path)
     dict = []
     seen = set()

@@ -2,77 +2,93 @@
 
 from __future__ import division
 from settings import config
+from preprocess import preprocess
 
 import pymongo
+from bson import ObjectId
 client = pymongo.MongoClient()
 db = client.thesis
+final_db = db.final_db
+docs_topics = db.docs_topics
 
 from senti_strength import RateSentiment
 
-def senti_attr():
-    struct = {}
-    for i, doc in enumerate(db.docs_topics.find()):
-        print i
-        if len(doc["comments"]) != 0:
-            doc_senti = 0
-            for comment in doc["comments"]:
-                comment_rating = RateSentiment(comment.encode('utf8'))
-                print comment, comment_rating.explain()
-                doc_senti += comment_rating.rate()
-            for topic, prob in doc["topics"]:
-                if topic not in struct:
-                    struct[topic] = doc_senti
-                else:
-                    struct[topic] += doc_senti
+def senti_db_update():
+    # Если проводить поиск и изменение на одной коллекции
+    # FIXME через некоторое время работы, появляется ошибка AttributeError: 'list' object has no attribute 'encode'
+    # Вероятно, причина в том, что на изменение подаются уже изменённые данные
+    for i, doc in enumerate(docs_topics.find().batch_size(25)):
+        print i, doc["url"], len(doc["comments"])
+        if not final_db.find_one({"url": doc["url"]}):
+            comments_senti = []
+            if len(doc["comments"]) != 0:
+                for comment in doc["comments"]:
+                    if comment:
+                        comment = preprocess.clear_text(comment)
+                        comment_rating = RateSentiment(comment.encode('utf8'), "final").rate()
+                        comments_senti.append((comment, comment_rating))
+                doc["comments"] = comments_senti
+            final_db.insert_one(doc)
 
-    print sorted(struct.items(), key=lambda x: x[1], reverse=True)
 
-
-def rate_comment_by_expert():
-    #204
-    import random
+def senti_by_topics():
+    """
+    Подсчитываем среднюю тональность для каждой темы
+    {"номер темы": "средний тональный балл"}
+    """
+    from topics import general_topic_distribution
     import pickle
-    import os.path
 
-    comments = []
-    evaluated = []
-    path = "{0}/Thesis/senti/".format(config.get("home_path"))
+    struct = {}
+    result = {}
+    topics_distr = general_topic_distribution()
 
-    sample_exist = os.path.isfile(path + "comments_sample")
+    for doc in db.final_db.find():
+        if len(doc["comments"]):
+            doc_rating = 0
+            for comment, rating in doc["comments"]:
+                doc_rating += rating
+            avg_doc_rating = doc_rating / len(doc["comments"])
 
-    if sample_exist:
-        sample = pickle.load(open(path + "comments_sample", 'rb'))
-    else:
-        for i, doc in enumerate(db.docs_topics.find()):
-            comments.extend(doc["comments"])
-        sample = random.sample(comments, 4000)
-        pickle.dump(sample, open(path + "comments_sample", "wb"))
+            for topic_id, score in doc["topics"]:
+                if topic_id not in struct.keys():
+                    struct[topic_id] = avg_doc_rating * score
+                else:
+                    struct[topic_id] += avg_doc_rating * score
 
-    for i, comment in enumerate(sample[204:]):
-        print i, comment + "\n"
-        senti = raw_input("Какой эмоциональный заряд несёт данный комментарий? Введите +, - или 0.")
+    struct = struct.items()
 
-        if senti == "+":
-            senti = 1
-        elif senti == "-":
-            senti = -1
-        elif senti == "0":
-            senti = 0
-        else:
-            print("Введите +, - или 0. Вы ввели " + str(senti))
-            senti = raw_input("Какой эмоциональный заряд несёт данный комментарий? Введите +, - или 0.")
+    for i in struct:
+        result[i[0]] = i[1] / topics_distr[i[0]]
 
-        # print senti, comment
-        evaluated.append((comment, senti))
-        pickle.dump(evaluated, open(path + "rated_comments", "wb"))
-        print "___________________________________"
+    result = sorted(result.items(), key=lambda x: x[1], reverse=True)
+    return result
+
+def senti_by_topics_single():
+    """
+    Здесь документу соответсвует только одна тема, к которой он относится с наибольшей вероятностью
+    {"номер темы": [количество документов, количество комментов]}
+    Для этой темы определяем среднюю оценку тональности
+    Представление данных:
+    sorted_data = sorted(senti_by_topics_single().items(), key=lambda item: item[1][1]/item[1][0], reverse=True)
+    for item in sorted_data:
+    print item[0], item[1][1]/item[1][0]
+    """
+    struct = {}
+    for doc in db.final_db.find():
+        if len(doc["comments"]):
+            doc_rating = 0
+            for comment, rating in doc["comments"]:
+                doc_rating += rating
+            avg_doc_rating = doc_rating / len(doc["comments"])
+
+            top_topic = sorted(doc["topics"], key=lambda x: x[1], reverse=True)[0][0]
+            if top_topic not in struct.keys():
+                struct[top_topic] = [1, avg_doc_rating]
+            else:
+                struct[top_topic][0] += 1  # количество докуметов с этой главной темой
+                struct[top_topic][1] += avg_doc_rating  # накопленный средний рейтинг
+    return struct
 
 
-# import pickle
-# path = "{0}/Thesis/senti/".format(config.get("home_path"))
-# sample = pickle.load(open(path + "comments_sample", 'rb'))
-# rated = pickle.load(open(path + "rated_comments", 'rb'))
-# print rated[-1][0], len(rated), sample[203]
-
-# sent = RateSentiment("абва", "ru_test")
-# print sent.explain()
+print senti_by_topics()
