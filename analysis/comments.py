@@ -204,7 +204,7 @@ def most_commented_topics3():
 
     if data_exists:
         fileObject = open(path, 'rb')
-        return pickle.load(fileObject)
+        result = pickle.load(fileObject)
     else:
         struct = {}
         result = {}
@@ -225,4 +225,59 @@ def most_commented_topics3():
 
         result = sorted(result.items(), key=lambda x: x[1], reverse=True)
         pickle.dump(result, open(path, "wb"))
-        return result
+
+    most_commented_value = result[0][1]
+
+    for num, i in enumerate(result):
+        print "{num} & {topic_id}. {topic_name} & {percent}\\% \\\\".format(num=num+1,
+                                                                            topic_id=i[0],
+                                                                            topic_name=config.topics_by_id(i[0]),
+                                                                            percent=round(i[1]/most_commented_value * 100, 1))
+    return result
+
+def comments_by_sources():
+    """"Выводит количество комментариев для каждого источника"""
+    counter = {
+        "bk55_preprocessed": {
+            "docs": 0,
+            "comments": 0
+        },
+        "gorod55": {
+            "docs": 0,
+            "comments": 0
+        },
+        "ngs55": {
+            "docs": 0,
+            "comments": 0
+        },
+        "omskinform": {
+            "docs": 0,
+            "comments": 0
+        },
+
+    }
+    for doc in db.docs_topics.find():
+        if doc["source"] == "bk55_preprocessed":
+            counter["bk55_preprocessed"]["comments"] += len(doc["comments"])
+            counter["bk55_preprocessed"]["docs"] += 1
+
+        elif doc["source"] == "gorod55":
+            counter["gorod55"]["comments"] += len(doc["comments"])
+            counter["gorod55"]["docs"] += 1
+
+        elif doc["source"] == "ngs55":
+            counter["ngs55"]["comments"] += len(doc["comments"])
+            counter["ngs55"]["docs"] += 1
+
+        elif doc["source"] == "omskinform":
+            counter["omskinform"]["comments"] += len(doc["comments"])
+            counter["omskinform"]["docs"] += 1
+        else:
+            print doc
+            raise Exception("wtf exptn")
+
+    for source in counter:
+        print source, counter[source]["comments"] / counter[source]["docs"]
+
+
+

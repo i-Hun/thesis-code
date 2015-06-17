@@ -16,32 +16,38 @@ dictionary = get_dictionary("solo")
 corpus = get_corpus(dictionary)
 
 
-def general_topic_distribution():
+def general_topic_distribution(collection="docs_topics", **params):  # collection="", selector={}
     """
     Суммируем вектора. Насчёт деления на количество векторов не уверен. Лучший способ подсчёта популярности тем
     """
+    if not "selector" in params:
+        selector = {}
+    else:
+        selector = params["selector"]
+
     path = "{0}/Thesis/code/output/topics/general_topic_distribution".format(config.get("home_path"))
     data_exists = os.path.isfile(path)
 
-    if data_exists:
-        fileObject = open(path, 'rb')
-        return pickle.load(fileObject)
-    else:
-        topic_distribution_dict = {}
-        for doc in docs_topics.find():
-            topic_distribution = doc["topics"]
-            for topic_id, score in topic_distribution:
-                if topic_id not in topic_distribution_dict.keys():
-                    topic_distribution_dict[topic_id] = score
-                else:
-                    topic_distribution_dict[topic_id] += score
-        for i in topic_distribution_dict.iteritems():
-            topic_distribution_dict[i[0]] = i[1]/docs_topics.count()
+    topic_distribution_dict = {}
+    for doc in db[collection].find(selector):
+        topic_distribution = doc["topics"]
+        for topic_id, score in topic_distribution:
+            if topic_id not in topic_distribution_dict.keys():
+                topic_distribution_dict[topic_id] = score
+            else:
+                topic_distribution_dict[topic_id] += score
+    for i in topic_distribution_dict.iteritems():
+        topic_distribution_dict[i[0]] = i[1]/db[collection].find(selector).count()
 
-        pickle.dump(topic_distribution_dict, open(path, "wb"))
-        print sorted(topic_distribution_dict.items(), key=lambda x: x[1], reverse=True)
-        return topic_distribution_dict
+    result_tuples = sorted(topic_distribution_dict.items(), key=lambda x: x[1], reverse=True)
+    for num, i in enumerate(result_tuples):
+        print "{num} & {topic_id}. {topic_name} & {prob} \\\\".format(num=num+1,
+                                                                            topic_id=i[0],
+                                                                            topic_name=config.topics_by_id(i[0]),
+                                                                            prob=round(i[1], 4))
+    return topic_distribution_dict
 
+#general_topic_distribution(selector={"source": "docs_topics"})
 
 def average_topics(threshold=0.01):
     """
@@ -145,3 +151,13 @@ def docs_with_this_topic(topic_id):
 def single_vector_distribution():
     model = LDA(dictionary, corpus, 50, "lda20/lda_training_50")
     print sorted(model[create_single_vector()], key=lambda x: x[1], reverse=True)
+
+
+def topics_by_sources():
+    """ Показывает в каких СМИ какие темы наиболее распространены """
+    sources = ["bk55_preprocessed", "gorod55", "ngs55", "omskinform"]
+    for source in sources:
+        selector = {"source": source}
+        print "_______{0}______".format(source.upper())
+        print general_topic_distribution(selector=selector)
+
