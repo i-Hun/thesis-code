@@ -76,7 +76,7 @@ num = [i[0] for i in output]
 kl = [i[1] for i in output]
 
 plt.plot(num, kl, 'o-')
-plt.ylabel(u'Расстояние Кульбака — Лейблера')
+plt.ylabel(u'Значение на основе расстояния Кульбака — Лейблера')
 plt.xlabel(u'Количество тем')
 plt.grid(True)
 plt.xlim(0, 105)

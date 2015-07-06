@@ -64,7 +64,6 @@ def perplexity():
     train_corpus = [corpus[i] for i in train_index]
     test_corpus = [corpus[j] for j in test_index]
 
-
     for num_topics in range(5, 101, 5):
         model = LDA(dictionary, train_corpus, num_topics, "lda20/lda_training_{num_topics}"
                     .format(num_topics=str(num_topics)), passes=20)
@@ -85,7 +84,6 @@ def perplexity():
                     bbox_inches='tight', format=ext, dpi=1200)
     plt.close()
 
-
     plt.plot(topics_list, perplexity2_list, 'o-')
     plt.ylabel(u'Перплексия')
     plt.xlabel(u'Количество тем')
@@ -96,4 +94,4 @@ def perplexity():
                     format=ext, bbox_inches='tight', dpi=1200)
     plt.close()
 
-perplexity()
+mallet_plot()

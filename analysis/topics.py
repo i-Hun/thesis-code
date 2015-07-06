@@ -20,10 +20,8 @@ def general_topic_distribution(collection="docs_topics", **params):  # collectio
     """
     Суммируем вектора. Насчёт деления на количество векторов не уверен. Лучший способ подсчёта популярности тем
     """
-    if not "selector" in params:
-        selector = {}
-    else:
-        selector = params["selector"]
+    selector = params.get("selector", {})
+    print collection, selector
 
     path = "{0}/Thesis/code/output/topics/general_topic_distribution".format(config.get("home_path"))
     data_exists = os.path.isfile(path)
@@ -39,15 +37,15 @@ def general_topic_distribution(collection="docs_topics", **params):  # collectio
     for i in topic_distribution_dict.iteritems():
         topic_distribution_dict[i[0]] = i[1]/db[collection].find(selector).count()
 
-    result_tuples = sorted(topic_distribution_dict.items(), key=lambda x: x[1], reverse=True)
-    for num, i in enumerate(result_tuples):
-        print "{num} & {topic_id}. {topic_name} & {prob} \\\\".format(num=num+1,
-                                                                            topic_id=i[0],
-                                                                            topic_name=config.topics_by_id(i[0]),
-                                                                            prob=round(i[1], 4))
+    # result_tuples = sorted(topic_distribution_dict.items(), key=lambda x: x[1], reverse=True)
+    # for num, i in enumerate(result_tuples):
+    #     print "{num} & {topic_id}. {topic_name} & {prob} \\\\".format(num=num+1,
+    #                                                                         topic_id=i[0],
+    #                                                                         topic_name=config.topics_by_id(i[0]),
+    #                                                                         prob=round(i[1], 4))
+    print "topic_distribution: ", topic_distribution_dict
     return topic_distribution_dict
 
-#general_topic_distribution(selector={"source": "docs_topics"})
 
 def average_topics(threshold=0.01):
     """
@@ -152,12 +150,75 @@ def single_vector_distribution():
     model = LDA(dictionary, corpus, 50, "lda20/lda_training_50")
     print sorted(model[create_single_vector()], key=lambda x: x[1], reverse=True)
 
+#_________________________________________
 
 def topics_by_sources():
-    """ Показывает в каких СМИ какие темы наиболее распространены """
+    """ Показывает в каких СМИ какие темы наиболее распространены
+        Возвращает {"источник": {topic_id: prob, topic_id: prob, ...}}
+    """
     sources = ["bk55_preprocessed", "gorod55", "ngs55", "omskinform"]
+    result = {}
     for source in sources:
         selector = {"source": source}
-        print "_______{0}______".format(source.upper())
-        print general_topic_distribution(selector=selector)
+        # print source.upper()
+        result[source] = general_topic_distribution(selector=selector)
+    return result
 
+
+def get_topics_positions(topics_by_sources):
+    """
+    На входе список тем по источнику из функции topics_by_sources() :
+    {"источник": {topic_id: prob, topic_id: prob, ...}}
+    Возвращает словарь вида {"источник": [("позиция": "тема"), ()], "источник": [(), ()]}
+    """
+    result = {}
+    for source, data in topics_by_sources.items():
+        sorted_list = sorted(data.items(), key=lambda x: x[1], reverse=True)  # (номер темы, вероятность)
+        rating_list = []  # (место, номер темы)
+        for num, tuple in enumerate(sorted_list):
+            rating_list.append((num + 1, tuple[0]))
+        result[source] = rating_list
+    # print "get_topics_positions: ", result
+    return result
+
+
+def get_topics_positions_format(topics_positions):
+    """
+    Принимает результаты фнкции get_topics_positions и форматирует их
+    """
+    result = {}
+    for source, data in topics_positions.items():
+        for position, topic in data:
+            result.setdefault(topic, {}).update({source:position})
+    print "get_topics_positions_format: ", result  # result = {0: {'bk55_preprocessed': 17, 'ngs55': 6, 'gorod55': 35, 'omskinform': 14}, 1: {'bk55_preprocessed': 1,
+    for i in result.items():
+        print "{topic_id}. {topic_name} & {bk55} & {ngs55} & {gorod55} & {omskinform} \\\\".format(topic_id=i[0], topic_name=config.topics_by_id(i[0]),
+                                                              bk55=i[1]["bk55_preprocessed"],
+                                                              ngs55=i[1]["ngs55"],
+                                                              gorod55=i[1]["gorod55"],
+                                                              omskinform=i[1]["omskinform"])
+
+
+def most_different_sources():
+    import itertools
+    import math
+
+    sources = ["bk55_preprocessed", "gorod55", "ngs55", "omskinform"]
+
+    for pair in itertools.combinations(sources, 2):
+        first = {}
+        second = {}
+
+        print pair
+        selector1 = {"source": pair[0]}
+        selector2 = {"source": pair[1]}
+        for topic, prob in general_topic_distribution(selector=selector1).items():
+            first[topic] = prob
+        for topic, prob in general_topic_distribution(selector=selector2).items():
+            second[topic] = prob
+
+        sums = 0
+        for topic, prob in first.items():
+            sum = math.fabs(second[topic] - prob)
+            sums +=sum
+        print "sums", sums

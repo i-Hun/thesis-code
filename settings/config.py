@@ -69,6 +69,6 @@ def get(key):
         "tex_image_path": "{0}/Thesis/tex/images/".format(os_specific_path),
         "tex_image_format": ["svg", "eps", "png"],
         "tex_font_size": 16,
-        "tex_font_family": "Georgia"
+        "tex_font_family": "Times New Roman"
     }
     return d[key]

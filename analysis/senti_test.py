@@ -12,6 +12,7 @@ final_db = db.final_db
 docs_topics = db.docs_topics
 
 from senti_strength import RateSentiment
+from topics import get_topics_positions, get_topics_positions_format
 
 def senti_db_update():
     # Если проводить поиск и изменение на одной коллекции
@@ -97,3 +98,43 @@ def senti_by_topics_single():
                 struct[top_topic][0] += 1  # количество докуметов с этой главной темой
                 struct[top_topic][1] += avg_doc_rating  # накопленный средний рейтинг
     return struct
+
+
+def senti_by_topics_by_source():
+    """Показывает различия в тональности комментариев в различных СМИ к одинм и тем же темам
+    Возвращает словарь вида {"источник": {"тема": "настроение" ...}}
+    get_topics_positions_format(get_topics_positions(senti_by_topics_by_source()))
+    """
+    from topics import general_topic_distribution
+
+    sources = ["bk55_preprocessed", "gorod55", "ngs55", "omskinform"]
+
+    result_by_sources = {}
+
+    for source in sources:
+        print "source", source
+        selector = {"source": source}
+        struct = {}
+        result = {}
+        topics_distr = general_topic_distribution(selector=selector)
+
+        for doc in db.final_db.find(selector):
+            if len(doc["comments"]):
+                doc_rating = 0
+                for comment, rating in doc["comments"]:
+                    doc_rating += rating
+                avg_doc_rating = doc_rating / len(doc["comments"])
+
+                for topic_id, prob in doc["topics"]:
+                    if topic_id not in struct.keys():
+                        struct[topic_id] = avg_doc_rating * prob
+                    else:
+                        struct[topic_id] += avg_doc_rating * prob
+
+        for topic, data in struct.items():
+            result[topic] = data / topics_distr[topic]
+
+        result_by_sources[source] = result
+
+    return result_by_sources
+
