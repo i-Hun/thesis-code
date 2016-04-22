@@ -23,7 +23,7 @@ def general_topic_distribution(collection="docs_topics", **params):  # collectio
     selector = params.get("selector", {})
     print collection, selector
 
-    path = "{0}/Thesis/code/output/topics/general_topic_distribution".format(config.get("home_path"))
+    path = "{0}/Thesis/code/output/general_topic_distribution".format(config.get("home_path"))
     data_exists = os.path.isfile(path)
 
     topic_distribution_dict = {}
@@ -134,16 +134,17 @@ def create_single_vector_text():
 
 def docs_with_this_topic(topic_id):
     """
-    Возвращает документы, в которых выборанная тема стоит на первом месте
+    Возвращает документы, в которых выбранная тема стоит на первом месте
     """
     model = LDA(dictionary, corpus, 50, "lda20/lda_training_50")
+    model.minimum_probability = 0.1
     for i, document in enumerate(raw_tokens.find()):
 
         doc_bow = dictionary.doc2bow(document["content"])
         topics_distr = model[doc_bow]
         topics_distr = sorted(topics_distr, key=lambda x: x[1], reverse=True)
         if topics_distr[0][0] == topic_id:  #номер интересующей нас темы
-            print document["url"], topics_distr[0], topics_distr[1], document["title"]
+            print document["url"], topics_distr[0], document["title"]
 
 
 def single_vector_distribution():
@@ -222,3 +223,6 @@ def most_different_sources():
             sum = math.fabs(second[topic] - prob)
             sums +=sum
         print "sums", sums
+
+
+docs_with_this_topic(39)
